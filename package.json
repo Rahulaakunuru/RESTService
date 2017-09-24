@@ -1,0 +1,18 @@
+{
+  "name": "todo-api",
+  "version": "1.0.0",
+  "description": "MongoDB API Basics",
+  "main": "index.js",
+  "dependencies": {
+    "body-parser": "^1.18.2",
+    "express": "^4.15.4",
+    "mongodb": "^2.2.31"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+      "start":"node server.js"
+  },
+  "author": "Rahul Aakunuru",
+  "license": "ISC"
+}
