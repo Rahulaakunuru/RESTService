@@ -1,5 +1,6 @@
 var express = require('express');
 var bodyParser = require('body-parser');
+var _ = require('lodash');
 
 var {mongoose} = require('./db/mongoose.js');
 var {ObjectID} = require('mongodb');
@@ -14,7 +15,7 @@ app.use(bodyParser.json());
 
 app.get('/todos', (req, res) => {
     Todo.find().then((todos) => {
-        res.send(todos);
+        res.send({todos});
     }, (err) => {
         res.status(400).send(err);
     });
@@ -43,6 +44,39 @@ app.post('/todos', (req, res) => {
     }, (err) => {
         res.status(400).send(err);
     });
+});
+
+app.delete('/todos/:id', (req, res) => {
+  var id = req.params.id;
+
+  if (!ObjectID.isValid(id)) {
+      res.status(404).send();
+  }
+    else {
+  Todo.findByIdAndRemove(id).then((todo) => {
+    if (!todo) {
+      return res.status(404).send();
+    }
+
+    res.send(todo);
+  }).catch((e) => {
+    res.status(400).send();
+  });   
+    }
+});
+
+app.post('/user', (req, res) => {
+    var body = _.pick(req.body,['email', 'password']);
+    var user = new Users(body);
+    
+    user.save().then(()=>{
+        return user.generateAuthToken();
+    }).then((token) => {
+        res.header('x-auth',token).send(user.toJson());
+    }).catch((err) => {
+        console.log(`err: ${err}`);
+        res.status(400).send(err);
+    })
 });
 
 app.listen(port, () => {
