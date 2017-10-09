@@ -6,6 +6,7 @@ var {mongoose} = require('./db/mongoose.js');
 var {ObjectID} = require('mongodb');
 var {Todo} = require('./models/todo.js');
 var {Users} = require('./models/users.js');
+var {authenticate} = require('./middleware/authenticate');
 
 var app = express();
 
@@ -46,6 +47,30 @@ app.post('/todos', (req, res) => {
     });
 });
 
+app.patch('/todos/:id', (req, res) => {
+    var id = req.params.id;
+    var body = _.pick(req.body,['text','completed']);
+    
+    if(!ObjectID.isValid(id)){
+        return res.status(400).send();
+    }
+    
+    if(_.isBoolean(body.completed) && body.completed){
+        body.completedAt = new Date.getTime();
+    } else {
+        body.completed = false;
+        body.completedAt = null;
+    }
+    Todo.findByIdAndUpdate(id,{'$set':body}, {new: true}).then((todo) => {
+        if(!todo){
+            return res.status(404).send();
+        }
+        res.send(todo);
+    }).catch((error) => {
+        res.status(404).send(e);
+    });
+});
+
 app.delete('/todos/:id', (req, res) => {
   var id = req.params.id;
 
@@ -77,6 +102,10 @@ app.post('/user', (req, res) => {
         console.log(`err: ${err}`);
         res.status(400).send(err);
     })
+});
+
+app.get('/user/me', authenticate, (req, res) => {
+    res.send(req.user);
 });
 
 app.listen(port, () => {
