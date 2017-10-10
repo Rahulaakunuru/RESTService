@@ -1,3 +1,4 @@
+require('./../config/config.js')
 const mongoose = require('mongoose');
 const validator_ = require('validator');
 const jwt = require('jsonwebtoken');
@@ -38,7 +39,7 @@ var userSchema = new mongoose.Schema(
 userSchema.methods.generateAuthToken = function(){
     var user = this;
     var access = 'auth';
-    var token = jwt.sign({_id: user._id.toHexString(), access}, 'abc123').toString();
+    var token = jwt.sign({_id: user._id.toHexString(), access}, process.env.JWT_SECRET).toString();
     
     user.tokens.push({
         access,
@@ -62,7 +63,7 @@ userSchema.statics.findByToken = function(token){
     var User = this;
     var decoded;
     try{
-        decoded = jwt.verify(token, 'abc123');
+        decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch(e){
         /*new promise((resolve, reject) => {
             reject();
@@ -76,17 +77,19 @@ userSchema.statics.findByToken = function(token){
     })
 }
 
-/*userSchema.pre('save', function(next){
+userSchema.pre('save', function(next){
     var user = this;
     if(user.isModified('password')){
         bcrypt.genSalt(10, (err, salt) => {
             bcrypt.hash(user.password, salt, (err, hash) => {
                 user.password = hash;
+                next();
             });
         });
+    } else {
+        next();
     }
-    next();
-});*/
+});
 
 userSchema.statics.findByCredentials = function(credentials){
     var User = this;
@@ -96,10 +99,12 @@ userSchema.statics.findByCredentials = function(credentials){
         if(!user)
             return Promise.reject();
         return new Promise((resolve, reject) => {
-            if(user.password === credentials.password)
-                resolve(user);
-            else
-                reject();
+            bcrypt.compare(credentials.password, user.password, (err, res) => {
+                if(res)
+                    resolve(user);
+                else
+                    reject();
+            });
         });
     });
 }
